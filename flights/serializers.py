@@ -4,6 +4,7 @@ from rest_framework import serializers
 from flights.models import Booking, Flight
 from django.contrib.auth.models import User
 from django.contrib.auth import get_user_model 
+from rest_framework_simplejwt.tokens import RefreshToken
 
 User = get_user_model()
 
@@ -54,13 +55,29 @@ class LoginSerializer(serializers.Serializer): #no modelserializer t login becau
     password = serializers.CharField(write_only=True) #the attribute is write only so the password become hased
     token = serializers.CharField(read_only=True, allow_blank=True) # token = access , samething different name
     
-    try:
-        user = User.objects.get(username=username)
-    except User.DoesNotExist:
-        raise serializers.ValidationError("Username Not Found ")
+    def validate(self, data):
+        username = data.get("username")
+        password = data.get("password")
+
+        try:
+            user = User.objects.get(username=username)
+        except User.DoesNotExist:
+            raise serializers.ValidationError("Username Not Found ")
     
-    if not user.check_password(password):
-        raise serializers.ValidationError("Incorrect password")  
-    else:
-        return data 
-  
+        if user.check_password(password):
+            payload = RefreshToken.for_user(user)
+            token = str(payload.access_token)
+            raise serializers.ValidationError("username or password is not valid")  
+            
+            data["token"] = token    
+            return data 
+        
+        else: 
+            raise serializers.ValidationError("username or password is not valid")
+
+# DRF Task5: permission
+class CreateFlightSerilazer(serializers.ModelSerializer):
+    passengers = serializers.PrimaryKeyRelatedField(read_only=True)
+    class Meta:
+        model = Booking
+        fields = ["id","date","flight","passengers"]
