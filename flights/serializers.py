@@ -64,16 +64,14 @@ class LoginSerializer(serializers.Serializer): #no modelserializer t login becau
         except User.DoesNotExist:
             raise serializers.ValidationError("Username Not Found ")
     
-        if user.check_password(password):
-            payload = RefreshToken.for_user(user)
-            token = str(payload.access_token)
+        if not user.check_password(password):
             raise serializers.ValidationError("username or password is not valid")  
             
-            data["token"] = token    
-            return data 
+        payload = RefreshToken.for_user(user)
+        token = str(payload.access_token)
+        data["token"] = token    
+        return data 
         
-        else: 
-            raise serializers.ValidationError("username or password is not valid")
 
 # DRF Task5: permission
 class CreateFlightSerilazer(serializers.ModelSerializer):

@@ -8,6 +8,7 @@ from .serializers import FlightSerializer, BookingSerializer,BookingDetailsSeria
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST
 from rest_framework.views import APIView 
+from .permissions import Permission, ModifiedBokking
 from rest_framework.permissions import AllowAny,IsAuthenticated,IsAdminUser
 class FlightsList(generics.ListAPIView):
     queryset = Flight.objects.all()
@@ -17,13 +18,14 @@ class FlightsList(generics.ListAPIView):
 class BookingsList(generics.ListAPIView):
     queryset = Booking.objects.filter(date__gte=datetime.today())
     serializer_class = BookingSerializer
-
+    permission_classes = [IsAuthenticated] # only logged in users
 
 class BookingDetails(generics.RetrieveAPIView):
     queryset = Booking.objects.all()
     serializer_class = BookingDetailsSerializer
     lookup_field = "id"
     lookup_url_kwarg = "booking_id"
+    permission_classes = [Permission] # only owner or staff
 
 
 class UpdateBooking(generics.RetrieveUpdateAPIView):
@@ -31,17 +33,19 @@ class UpdateBooking(generics.RetrieveUpdateAPIView):
     serializer_class = UpdateBookingSerializer
     lookup_field = "id"
     lookup_url_kwarg = "booking_id"
+    permission_classes = [ModifiedBokking] # only owner or staff
 
 
 class CancelBooking(generics.DestroyAPIView):
     queryset = Booking.objects.all()
     lookup_field = "id"
     lookup_url_kwarg = "booking_id"
+    permission_classes = [ModifiedBokking] # only owner or staff
 
 
 class BookFlight(generics.CreateAPIView):
     serializer_class = UpdateBookingSerializer
-
+    permission_classes = [IsAuthenticated]
     def perform_create(self, serializer):
         serializer.save(user=self.request.user, flight_id=self.kwargs["flight_id"])
 
